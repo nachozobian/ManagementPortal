@@ -29,7 +29,7 @@ class Authenticate:
         cookie_expiry_days: int
             The number of days before the cookie expires on the client's browser.
         """
-        self.mongo_uri = os.environ['MONGO_AUTH']
+        self.mongo_uri = os.environ['MONGO_URI']
         self.cookie_name = cookie_name
         self.key = key
         self.cookie_expiry_days = cookie_expiry_days
@@ -43,8 +43,8 @@ class Authenticate:
             st.session_state['email'] = None
         if 'logout' not in st.session_state:
             st.session_state['logout'] = None
-        self.mailchimp_client = MailChimp(mc_api=os.environ['MAILCHIMP_API_KEY'])
-        self.preauthorized = {'emails': []}
+        #self.mailchimp_client = MailChimp(mc_api=os.environ['MAILCHIMP_API_KEY'])
+        self.preauthorized = {'emails': ['']}
 
     def _token_encode(self) -> str:
         """
@@ -131,7 +131,7 @@ class Authenticate:
         print('checking email verified')
         print(self.email)
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users'] 
         user = users.find_one({'email': str(self.email)})
         client.close()

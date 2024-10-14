@@ -7,8 +7,9 @@ import requests
 import tempfile
 import base64
 from openai import OpenAI
-os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY")
 
+from dotenv import load_dotenv
+load_dotenv()
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 import stripe
 
@@ -23,8 +24,7 @@ LISTINGS_FOLDER = "listings/"
 s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 # Initialize the chatbot instance
-from dotenv import load_dotenv
-load_dotenv()
+
 
 def is_email_subscribed(email):
     # Initialize the Stripe API with the given key
@@ -48,6 +48,7 @@ def is_email_subscribed(email):
 
 def save_listing(address):
     """Create a 'folder' for the listing in S3"""
+    address = address.replace(" ", "")
     key = f"{LISTINGS_FOLDER}{address}/"
     s3.put_object(Bucket=BUCKET_NAME, Key=key)
 

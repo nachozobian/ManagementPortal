@@ -40,8 +40,8 @@ def main():
     selected_address = st.selectbox("Select a listing:", available_listings)
     tenants = get_tenants_for_address(selected_address)
     selected_tenant = st.selectbox("Select a tenant:", [t.replace('_', ' ') for t in tenants])
-    selected_tenant = selected_tenant.replace(' ', '_')
-     # List documents for the selected tenant
+    selected_tenant = selected_tenant.replace(' ', '_') if selected_tenant != None else None
+     # List documents for the selected tenants
     file_names, files = list_files_for_tenant(selected_address, selected_tenant)
     meta_datas = []
     doc_types = []
@@ -91,6 +91,7 @@ def main():
         doc_type = doc_type.replace('_', ' ')
         
         presigned_url = generate_presigned_url(BUCKET_NAME, file['Key'])
+        st.markdown(presigned_url)
         local_file_path = download_from_presigned_url(presigned_url)
         file_encoding = detect_file_encoding(local_file_path)
         with open(local_file_path, 'r', encoding=file_encoding) as f:
@@ -116,7 +117,7 @@ def main():
 
 
 if __name__ == "__main__":
-    st.session_state['authenticator'] = Authenticate("smartbidscookie3124", "smartbidskey3214", 30)
+    st.session_state['authenticator'] = Authenticate("testuser", "2vjuL8U6Q9Pptaz", 30)
     if 'authentication_status' not in st.session_state:
         st.session_state['authentication_status'] = None
     if 'verified' not in st.session_state:
