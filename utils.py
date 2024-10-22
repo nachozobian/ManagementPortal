@@ -1,5 +1,6 @@
 import streamlit as st
 import boto3
+from botocore.client import Config
 from io import BytesIO
 from embedchain import App
 import os
@@ -21,7 +22,7 @@ BUCKET_NAME = os.environ.get('BUCKET_NAME')
 LISTINGS_FOLDER = "listings/"
 
 # Initialize S3 clients
-s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, config=Config(region_name='eu-north-1',signature_version='s3v4'))
 
 # Initialize the chatbot instance
 
@@ -79,7 +80,7 @@ def download_file_from_s3(bucket_name, object_name):
     
 def download_from_presigned_url(presigned_url):
     """Download a file from a presigned URL and return the path to the temporary file."""
-    response = requests.get(presigned_url)
+    response = requests.get(presigned_url, stream=True)
     response.raise_for_status()  # Raise an exception for HTTP errors
 
     # Create a temporary file and write the content to it
@@ -92,6 +93,7 @@ def generate_presigned_url(bucket_name, object_name, expiration=3600):
     url = s3.generate_presigned_url('get_object',
                                     Params={'Bucket': bucket_name, 'Key': object_name},
                                     ExpiresIn=expiration)
+    print(f"Generated presigned URL for {object_name} with expiration in {expiration} seconds.")
     return url
 
 def determine_data_type(file_name):
@@ -156,13 +158,13 @@ def create_bot(selected_address, selected_tenant):
             file_content = f.read()
         name = selected_tenant.replace('_', ' ')  # This should be fetched dynamically
         address = selected_address
-        response = client.chat.completions.create(model="gpt-3.5-turbo-16k-0613",
+        response = client.chat.completions.create(model="gpt-3.5-turbo-0125",
         messages=[
               {'role': 'system', 'content': f'You are very detail oriented property management analyst, who carefully reads all details of an unstructured document and creates a structured document containing all key pieces of information that would be helpful for analyzing the tenant.'},
             {"role": "user", "content": f"Based on the following messy document from {name} with document type {document_type}, provide a summary of the document. Carefully report all key metrics. Do not provide your own commentary. Just summarize very carefully. Only include information that would be important for determining whether the tenant is a good fit for the rental property. Don't include anything about disclaimers or stuff like that. Here is the document: \n ```{file_content}```"}
         ],
         temperature=0.0)
-        response_text = response['choices'][0]['message']['content']
+        response_text = response.choices[0].message.content
         response_text = response_text.replace('*', '\*').replace('_', '\_')
         response_text = response_text.replace('\xa0', ' ')
         response_text = response_text.replace('$', '\$')

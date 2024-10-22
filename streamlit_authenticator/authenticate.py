@@ -91,7 +91,7 @@ class Authenticate:
             The validity of the entered password by comparing it to the hashed password in the Airtable.
         """
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users'] 
         user = users.find_one({'email': self.email})
         client.close()
@@ -166,7 +166,7 @@ class Authenticate:
         print('checking credentials....')
         st.session_state['verified'] = False
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users'] 
         user = users.find_one({'email':self.email})
         client.close()
@@ -285,7 +285,7 @@ class Authenticate:
         """
         hashed_password = Hasher([password]).generate()[0]
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users'] 
         user_records = users.find_one({'email': self.email})
         if user_records:
@@ -325,7 +325,7 @@ class Authenticate:
         new_password_repeat = reset_password_form.text_input('Repeat password', type='password')
         if reset_password_form.form_submit_button('Reset'):
             client = MongoClient(self.mongo_uri)
-            db = client['smartbids']
+            db = client['vivicheck']
             users = db['users']
             user_info = users.find_one({'email': self.email})
             client.close()
@@ -376,7 +376,7 @@ class Authenticate:
             'created': datetime.now()
         }
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         users.insert_one(user_credentials)
         client.close()
@@ -446,7 +446,7 @@ class Authenticate:
         postal_code = register_user_form.text_input('Your postal code')
         needs = register_user_form.radio('I want to', ["Buy", "Sell", "Both", "I am a realtor"])
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         if register_user_form.form_submit_button('Register'):
             if validate_email(new_email):
@@ -494,7 +494,7 @@ class Authenticate:
         self.random_password = generate_random_pw()
         hashed_password = Hasher([self.random_password]).generate()[0]
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         users.update_one({'email': email},  {'$set': {'password': hashed_password}})
         client.close()
@@ -532,7 +532,7 @@ class Authenticate:
         if forgot_password_form.form_submit_button('Submit'):
             if len(email) > 0:
                 client = MongoClient(self.mongo_uri)
-                db = client['smartbids']
+                db = client['vivicheck']
                 users = db['users']
                 user = users.find_one({'email': email})
                 client.close()
@@ -560,7 +560,7 @@ class Authenticate:
             email associated with given key, value pair i.e. "jsmith".
         """
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         user = users.find_one({key: value})
         client.close()
@@ -616,7 +616,7 @@ class Authenticate:
             The updated entry value i.e. "jsmith@gmail.com".
         """
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         users.update_one({'email': email},  {'$set': {key: value}})
         client.close()
@@ -650,7 +650,7 @@ class Authenticate:
         field = update_user_details_form.selectbox('Field', ['name', 'email']).lower()
         new_value = update_user_details_form.text_input('New value')
         client = MongoClient(self.mongo_uri)
-        db = client['smartbids']
+        db = client['vivicheck']
         users = db['users']
         if update_user_details_form.form_submit_button('Update'):
             if len(new_value) > 0:

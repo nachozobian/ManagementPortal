@@ -2,7 +2,7 @@ import streamlit as st
 from io import BytesIO
 from embedchain import App
 from utils import *
-from openai import OpenAI
+import openai
 
 client = OpenAI()
 from chardet.universaldetector import UniversalDetector
@@ -54,7 +54,7 @@ def main():
             ],
             temperature=0.0)
 
-            response_text = response['choices'][0]['message']['content']
+            response_text = response.choices[0].message.content
             response_text = response_text.replace('*', '\*').replace('_', '\_')
             response_text = response_text.replace('\xa0', ' ')
             response_text = response_text.replace('$', '\$')
@@ -63,7 +63,7 @@ def main():
             st.markdown(response_text)
         st.write(responses)
         # AI Tenant Evaluation Section
-        response = client.chat.completions.create(model="gpt-3.5-turbo-16k-0613",
+        response = client.chat.completions.create(model="gpt-3.5-turbo-0125",
         messages=[
             {'role': 'system', 'content': f'You are a highly detail-oriented property manager and are currently evaluating a prospective tenant. Your goal is to evaluate the tenant and determine whether they are a good fit for the property based on several reports provided to you. Pay close attention to key metrics like credit score, income level and job stability. Be highly suspect of any red flags.'},
             {"role": "user", "content": f'''You are provided with several key summaries of the documents provided by prospective tenant named {name} for a rental property located at {address}. Based on these documents, write the following report with 3 sections.
@@ -74,7 +74,7 @@ def main():
              \n ```{responses}```'''}
         ],
         temperature=0.0)
-        response_text = response['choices'][0]['message']['content']
+        response_text = response.choices[0].message.content
         response_text = response_text.replace('*', '\*').replace('_', '\_')
         response_text = response_text.replace('\xa0', ' ')
         response_text = response_text.replace('$', '\$')
@@ -95,7 +95,10 @@ if __name__ == "__main__":
     st.session_state['authenticator'].login('Login', 'main')
     if st.session_state['verified'] and st.session_state["authentication_status"]:
         st.session_state['authenticator'].logout('Logout', 'sidebar', key='123')
-    if st.session_state['verified'] and st.session_state["authentication_status"]:
-        if 'subscribed' not in st.session_state:
-            st.session_state['subscribed'] = is_email_subscribed(st.session_state['email'])
+    # if st.session_state['verified'] and st.session_state["authentication_status"]:
+    #     if 'subscribed' not in st.session_state:
+    #         st.session_state['subscribed'] = is_email_subscribed(st.session_state['email'])
+    #     main()
+    if st.session_state["authentication_status"]:
+        st.session_state['authenticator'].logout('Logout', 'sidebar', key='123')
         main()
