@@ -16,8 +16,11 @@ def main():
 
     selected_address = st.selectbox("Select a listing:", available_listings)
     tenants = get_tenants_for_address(selected_address)
-    selected_tenant = st.selectbox("Select a tenant:", tenants)
-
+    if tenants:
+        selected_tenant = st.selectbox("Select a tenant:", tenants)
+    else:
+        st.warning("No tenants available for this listing.")
+        return
 
     # Initialize embedchain app
     if st.button("Chat with tenant?"):
@@ -53,18 +56,30 @@ def main():
                 message_placeholder.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-
 if __name__ == "__main__":
-    st.session_state['authenticator'] = Authenticate("smartbidscookie3124", "smartbidskey3214", 30)
+    # Initialize authenticator and session state variables
+    if 'authenticator' not in st.session_state:
+        st.session_state['authenticator'] = Authenticate("smartbidscookie3124", "smartbidskey3214", 30)
     if 'authentication_status' not in st.session_state:
         st.session_state['authentication_status'] = None
-    if 'verified' not in st.session_state:
-        st.session_state['verified'] = None
+    if 'name' not in st.session_state:
+        st.session_state['name'] = None
+    if 'username' not in st.session_state:
+        st.session_state['username'] = None
 
-    st.session_state['authenticator'].login('Login', 'main')
-    if st.session_state['verified'] and st.session_state["authentication_status"]:
-        st.session_state['authenticator'].logout('Logout', 'sidebar', key='123')
-    if st.session_state['verified'] and st.session_state["authentication_status"]:
-        if 'subscribed' not in st.session_state:
-            st.session_state['subscribed'] = is_email_subscribed(st.session_state['email'])
+    # Check authentication status
+    if st.session_state['authentication_status']:
+        st.sidebar.title(f"Welcome {st.session_state.get('name')}")
+        st.session_state['authenticator'].logout('Logout', 'sidebar')
         main()
+    else:
+        name, authentication_status, username = st.session_state['authenticator'].login('Login', 'main')
+        if authentication_status:
+            st.session_state['authentication_status'] = True
+            st.session_state['name'] = name
+            st.session_state['username'] = username
+            st.experimental_rerun()
+        elif authentication_status == False:
+            st.error('Username/password is incorrect')
+        elif authentication_status == None:
+            st.warning('Please enter your username and password')

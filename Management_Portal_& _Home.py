@@ -24,22 +24,18 @@ def detect_file_encoding(file_path):
 def main(authenticator):
 
     st.sidebar.title("Welcome to YourHome.ai")
-    page = st.sidebar.radio("Navigation", ["Login", "Register"], key='navigation_radio')  # Add a unique key
+    page = st.sidebar.radio("Navigation", ["Login", "Register"], key='navigation_radio')
 
     if page == "Login":
-        st.title("Login to Your Account")
-        
-        # Call the login function from the Authenticate class
-        name, auth_status, email = authenticator.login('Login', 'main')
-
-        if auth_status:
-            st.success(f"Welcome {name}")
+        # Check if the user is already authenticated
+        if st.session_state.get('authentication_status'):
+            st.success(f"Welcome {st.session_state.get('name')}")
             st.title('Management Portal')
-
+            # Place your authenticated user content here
             # Realtor Listing Creation Section
             st.subheader("Create Upload Portal")
-            address = st.text_input("Enter the address for the listing:", key='create_listing_address')  # Add key
-            if st.button("Create Listing", key='create_listing_button'):  # Add key
+            address = st.text_input("Enter the address for the listing:", key='create_listing_address')
+            if st.button("Create Listing", key='create_listing_button'):
                 save_listing(address)
                 st.success(f"Listing for {address} created successfully!")
 
@@ -50,16 +46,16 @@ def main(authenticator):
                 st.warning("No listings available at the moment.")
                 return
 
-            selected_address = st.selectbox("Select a listing:", available_listings, key='select_listing')  # Add key
+            selected_address = st.selectbox("Select a listing:", available_listings, key='select_listing')
             tenants = get_tenants_for_address(selected_address)
-            selected_tenant = st.selectbox("Select a tenant:", [t.replace('_', ' ') for t in tenants], key='select_tenant')  # Add key
+            selected_tenant = st.selectbox("Select a tenant:", [t.replace('_', ' ') for t in tenants], key='select_tenant')
             selected_tenant = selected_tenant.replace(' ', '_') if selected_tenant != None else None
 
             # List documents for the selected tenants
             file_names, files = list_files_for_tenant(selected_address, selected_tenant)
             meta_datas = []
             doc_types = []
-            
+
             # Extract document categories
             document_categories = set()
             for file in files:
@@ -70,11 +66,11 @@ def main(authenticator):
                 document_categories.add(document_type)
 
             document_categories = list(document_categories)
-            selected_category = st.selectbox("Select a document to view:", document_categories, key='select_document')  # Add key
+            selected_category = st.selectbox("Select a document to view:", document_categories, key='select_document')
 
             # Fetch the corresponding document for the selected category
             selected_file = next((file for i, file in enumerate(file_names) if selected_category in doc_types[i]), None)
-            if st.button("Analyze Document", key='analyze_document_button'):  # Add key
+            if st.button("Analyze Document", key='analyze_document_button'):
                 file_key = selected_file
                 file_data = download_file_from_s3(BUCKET_NAME, file_key)
                 file_type = determine_data_type(selected_file)
@@ -103,7 +99,7 @@ def main(authenticator):
                     if selected_category.lower() in doc_type:
                         break
                 doc_type = doc_type.replace('_', ' ')
-                
+
                 presigned_url = generate_presigned_url(BUCKET_NAME, file['Key'])
                 st.markdown(presigned_url)
                 local_file_path = download_from_presigned_url(presigned_url)
@@ -124,28 +120,40 @@ def main(authenticator):
                 response_text = response.choices[0].message.content
                 response_text = response_text.replace('*', '\*').replace('_', '\_').replace('\xa0', ' ').replace('$', '\$')
                 st.markdown(response_text)
+        else:
+            st.title("Login to Your Account")
+            # Call the login function from the Authenticate class
+            name, auth_status, email = authenticator.login('Login', 'main')
 
-        elif auth_status == False:
-            st.error("Login failed. Please check your email and password.")
-        elif auth_status == None:
-            st.warning("Please enter your credentials.")
+            if auth_status:
+                # Store authentication status and user info in session state
+                st.session_state['authentication_status'] = True
+                st.session_state['name'] = name
+                st.session_state['email'] = email
+                st.success(f"Welcome {name}")
+                st.title('Management Portal')
+                # You can optionally rerun the script to reflect the authenticated state
+                st.experimental_rerun()
+            elif auth_status == False:
+                st.error("Login failed. Please check your email and password.")
+            elif auth_status == None:
+                st.warning("Please enter your credentials.")
 
     elif page == "Register":
         st.title("Create a New Account")
-        # Call the register function from the Authenticate class
         if authenticator.register_user('Register', 'main', preauthorization=False):
             st.success("Registration successful! You can now log in.")
         else:
             st.warning("Please fill out the form to register.")
 
 if __name__ == "__main__":
-    st.session_state['authenticator'] = Authenticate("nachozobian", "Hola", 30)
+    if 'authenticator' not in st.session_state:
+        st.session_state['authenticator'] = Authenticate("nachozobian", "Hola", 30)
     if 'authentication_status' not in st.session_state:
         st.session_state['authentication_status'] = None
     if 'verified' not in st.session_state:
         st.session_state['verified'] = None
-    if st.session_state['verified'] and st.session_state["authentication_status"]:
+    if st.session_state.get('verified') and st.session_state.get("authentication_status"):
         if 'subscribed' not in st.session_state:
             st.session_state['subscribed'] = is_email_subscribed(st.session_state['email'])
-            
-main(authenticator=st.session_state['authenticator'])
+    main(authenticator=st.session_state['authenticator'])
