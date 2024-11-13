@@ -9,7 +9,7 @@ from chardet.universaldetector import UniversalDetector
 from streamlit_authenticator import Authenticate
 import re
 
-st.set_page_config(page_title="YourHome.ai", page_icon=":house", layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="ViviCheck.ai", page_icon=":house", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
 def detect_file_encoding(file_path):
     detector = UniversalDetector()
@@ -59,7 +59,7 @@ def main(authenticator):
             # Extract document categories
             document_categories = set()
             for file in files:
-                metadata = get_metadata_for_file(BUCKET_NAME, file['Key'])
+                metadata = get_metadata_for_file(file['Key'])
                 meta_datas.append(metadata)
                 document_type = metadata.get('document_type', '').lower()
                 doc_types.append(document_type)

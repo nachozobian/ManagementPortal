@@ -122,9 +122,9 @@ def get_files_for_tenant(address, tenant_name, only_text=False):
     else:
         return response['Contents']
 
-def get_metadata_for_file(bucket_name, file_key):
+def get_metadata_for_file(file_key):
     """Get the metadata for a specific file in S3"""
-    response = s3.head_object(Bucket=bucket_name, Key=file_key)
+    response = s3.head_object(Bucket=BUCKET_NAME, Key=file_key)
     return response['Metadata']
 
 def list_files_for_tenant(address, tenant_name):

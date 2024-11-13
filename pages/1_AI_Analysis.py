@@ -20,31 +20,32 @@ def detect_file_encoding(file_path):
     return detector.result['encoding']
 
 def main():
-    st.title('Analyze Tenant Documents')
+    st.title('Analizador de inquilino')
 
     # Analyze Candidates for an Address Section
-    st.subheader("Analyze Tenant Documents")
+    st.subheader("Analiza Documentos")
     available_listings = fetch_created_listings()
     if not available_listings:
-        st.warning("No listings available at the moment.")
+        st.warning("No hay propiedades disponibles en estos momentos")
         return
-
-    selected_address = st.selectbox("Select a listing:", available_listings)
+    else:
+        available_listings = [al.replace('_',' ') for al in available_listings]
+        selected_address = st.selectbox("Selecciona una propiedad:", available_listings)
 
     tenants = get_tenants_for_address(selected_address)
     if tenants:
         tenant_options = [t.replace('_', ' ') for t in tenants]
-        selected_tenant = st.selectbox("Select a tenant:", ["-- Select a tenant --"] + tenant_options)
+        selected_tenant = st.selectbox("Selecciona un inquilino:", ["-- Selecciona un inquilino --"] + tenant_options)
 
-        if selected_tenant != "-- Select a tenant --":
+        if selected_tenant != "-- Selecciona un inquilino --":
             name = selected_tenant
             address = selected_address
 
-            if st.button("Produce Tenant Report"):
+            if st.button("Informe de inquilino"):
                 files = get_files_for_tenant(selected_address, selected_tenant.replace(' ', '_'), only_text=True)
                 responses = ''
                 for file in files:
-                    metadata = get_metadata_for_file(BUCKET_NAME, file['Key'])
+                    metadata = get_metadata_for_file(file['Key'])
                     document_type = metadata.get('document_type', '').lower()
                     presigned_url = generate_presigned_url(BUCKET_NAME, file['Key'])
                     local_file_path = download_from_presigned_url(presigned_url)
@@ -70,31 +71,28 @@ def main():
                                 'content': (
                                     f"Based on the following document from {name} with document type {document_type}, "
                                     "provide a concise summary of all meaningful aspects of the document for your "
-                                    "manager. Be sure to highlight key numerical variables in your analysis. The "
-                                    f"information you provide should help to determine whether {name} is a good fit "
+                                    "manager"
+                                    f"The information you provide should help to determine whether {name} is a good fit "
                                     "as a tenant. Finally, provide commentary on whether you believe this tenant is "
                                     "a strong candidate.\n\n"
                                     f"```{file_content}```"
                                 )
                             }
                         ],
-                        temperature=0.0
+                        temperature=0.1
                     )
 
                     response_text =  response.choices[0].message.content
                     response_text = response_text.replace('*', '\*').replace('_', '\_')
                     response_text = response_text.replace('\xa0', ' ')
                     response_text = response_text.replace('$', '\$')
-                    st.write(response_text)
                     responses += (
                         f"The following is a report analyzing the document provided by {name} "
                         f"with document type {document_type}:\n\n{response_text}\n"
                     )
-                    st.markdown(response_text)
-                st.write(responses)
 
                 # AI Tenant Evaluation Section
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-3.5-turbo-0125",
                     messages=[
                         {
@@ -112,7 +110,7 @@ def main():
                             'content': (
                                 f"You are provided with several key summaries of the documents provided by the "
                                 f"prospective tenant named {name} for a rental property located at {address}. "
-                                "Based on these documents, write the following report with 4 sections:\n\n"
+                                "Based on these documents, write the following report with 4 sections in a markdown streamlit compatible format avoidin:\n\n"
                                 "Section 1 (Key Information): A summary of all the information provided to you.\n"
                                 "Section 2 (Numerical Analysis): A summary of the key numerical variables in the documents.\n"
                                 "Section 3 (Tenant Evaluation and Recommendation): A summary of whether you believe this tenant is a strong candidate or not.\n"
@@ -121,13 +119,13 @@ def main():
                             )
                         }
                     ],
-                    temperature=0.0
+                    temperature=0.2
                 )
                 response_text = response.choices[0].message.content
-                response_text = response_text.replace('*', '\*').replace('_', '\_')
+                response_text = response_text.replace('_', '\_')
                 response_text = response_text.replace('\xa0', ' ')
                 response_text = response_text.replace('$', '\$')
-                st.write(response_text)
+                st.markdown(response_text)
         else:
             st.warning("Please select a tenant to proceed.")
     else:
